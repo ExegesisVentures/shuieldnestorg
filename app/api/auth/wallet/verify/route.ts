@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { uiError } from "@/utils/errors";
 import { createSupabaseClient } from "@/utils/supabase/server";
 import { ensurePublicUserProfile, getPublicUserId } from "@/utils/supabase/user-profile";
-import { ADR36_PREFIX, makeSignDoc, verifyAndConsumeNonce } from "@/utils/wallet/adr36";
+import { verifyAndConsumeNonce } from "@/utils/wallet/adr36";
 
 /**
  * Verify wallet signature and link to user account
@@ -13,10 +13,12 @@ import { ADR36_PREFIX, makeSignDoc, verifyAndConsumeNonce } from "@/utils/wallet
  */
 export async function POST(req: Request) {
   try {
-    const { address, signature, publicKey, nonce, email } = await req.json();
+    const { address, signature, nonce, email } = await req.json();
     if (!address || !signature || !nonce) {
       return NextResponse.json(uiError("BAD_REQUEST","Missing fields"), { status: 400 });
     }
+
+    // TODO: Use publicKey for ADR-36 signature verification with cosmjs
 
     const supabase = await createSupabaseClient();
 

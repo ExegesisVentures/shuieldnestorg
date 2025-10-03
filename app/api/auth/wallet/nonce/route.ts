@@ -45,9 +45,10 @@ export async function GET(req: Request) {
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
     return NextResponse.json({ nonce, expiresAt: expiresAt.toISOString() });
-  } catch (e: any) {
+  } catch (e) {
     console.error("Nonce generation error:", e);
-    const err = uiError("NONCE_FAILED", "Could not create a login nonce.", e.message);
+    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    const err = uiError("NONCE_FAILED", "Could not create a login nonce.", errorMessage);
     return NextResponse.json(err, { status: 500 });
   }
 }
