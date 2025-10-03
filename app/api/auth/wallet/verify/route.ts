@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { uiError } from "@/utils/errors";
-import { createSupabaseClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/service-role";
 import { ensurePublicUserProfile, getPublicUserId } from "@/utils/supabase/user-profile";
 import { verifyAndConsumeNonce } from "@/utils/wallet/adr36";
 
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
 
     // TODO: Use publicKey for ADR-36 signature verification with cosmjs
 
-    const supabase = await createSupabaseClient();
+    // Use service role client to bypass RLS for user creation
+    const supabase = createServiceRoleClient();
 
     // Verify nonce is valid and not expired
     const nonceCheck = await verifyAndConsumeNonce(supabase, nonce, address);
