@@ -192,6 +192,10 @@ export default function Dashboard() {
               valueUsd: t.valueUsd,
               change24h: t.change24h,
               logoUrl: t.logoUrl,
+              denom: t.denom,
+              available: t.available,
+              staked: t.staked,
+              rewards: t.rewards,
             }))}
             loading={loading}
           />

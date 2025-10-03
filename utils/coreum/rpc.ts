@@ -29,6 +29,10 @@ export interface EnrichedBalance {
   change24h: number;
   decimals: number;
   logoUrl?: string;
+  // COREUM-specific breakdown
+  available?: string;
+  staked?: string;
+  rewards?: string;
 }
 
 /**
@@ -48,6 +52,55 @@ export async function fetchBalances(address: string): Promise<TokenBalance[]> {
   } catch (error) {
     console.error("Error fetching balances:", error);
     return [];
+  }
+}
+
+/**
+ * Fetch staked COREUM for an address
+ */
+export async function fetchStakedBalance(address: string): Promise<string> {
+  try {
+    const url = `${COREUM_REST_ENDPOINT}/cosmos/staking/v1beta1/delegations/${address}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      return "0";
+    }
+    
+    const data = await response.json();
+    const delegations = data.delegation_responses || [];
+    
+    const totalStaked = delegations.reduce((sum: bigint, del: any) => {
+      return sum + BigInt(del.balance?.amount || "0");
+    }, BigInt(0));
+    
+    return totalStaked.toString();
+  } catch (error) {
+    console.error("Error fetching staked balance:", error);
+    return "0";
+  }
+}
+
+/**
+ * Fetch pending rewards for an address
+ */
+export async function fetchRewards(address: string): Promise<string> {
+  try {
+    const url = `${COREUM_REST_ENDPOINT}/cosmos/distribution/v1beta1/delegators/${address}/rewards`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      return "0";
+    }
+    
+    const data = await response.json();
+    const rewards = data.total || [];
+    
+    const coreReward = rewards.find((r: any) => r.denom === "ucore");
+    return coreReward ? BigInt(Math.floor(parseFloat(coreReward.amount))).toString() : "0";
+  } catch (error) {
+    console.error("Error fetching rewards:", error);
+    return "0";
   }
 }
 
@@ -154,7 +207,29 @@ export async function enrichBalances(balances: TokenBalance[]): Promise<Enriched
  */
 export async function getAddressBalances(address: string): Promise<EnrichedBalance[]> {
   const rawBalances = await fetchBalances(address);
-  return enrichBalances(rawBalances);
+  const enriched = await enrichBalances(rawBalances);
+  
+  // Add staking and rewards data for COREUM
+  const coreBalance = enriched.find(b => b.denom === "ucore");
+  if (coreBalance) {
+    const staked = await fetchStakedBalance(address);
+    const rewards = await fetchRewards(address);
+    
+    coreBalance.staked = formatTokenAmount(staked, 6);
+    coreBalance.rewards = formatTokenAmount(rewards, 6);
+    coreBalance.available = coreBalance.balanceFormatted;
+    
+    // Update total balance to include staked
+    const totalBalance = BigInt(coreBalance.balance) + BigInt(staked) + BigInt(rewards);
+    coreBalance.balance = totalBalance.toString();
+    coreBalance.balanceFormatted = formatTokenAmount(totalBalance.toString(), 6);
+    
+    // Recalculate value with total
+    const price = await getTokenPrice("CORE");
+    coreBalance.valueUsd = parseFloat(coreBalance.balanceFormatted) * price;
+  }
+  
+  return enriched;
 }
 
 /**

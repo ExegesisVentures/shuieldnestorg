@@ -1,7 +1,8 @@
 "use client";
 
-import { ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
+import { ExternalLink, TrendingUp, TrendingDown, Coins } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { formatTokenSymbol, formatTokenName, sortTokensWithCoreFirst } from "@/utils/token-display";
 
 interface Token {
   symbol: string;
@@ -10,6 +11,11 @@ interface Token {
   valueUsd: number;
   change24h: number;
   logoUrl?: string;
+  denom?: string;
+  // COREUM breakdown
+  available?: string;
+  staked?: string;
+  rewards?: string;
 }
 
 interface TokenTableProps {
@@ -85,6 +91,9 @@ export default function TokenTable({ tokens = [], loading = false }: TokenTableP
     );
   }
 
+  // Sort tokens with CORE first
+  const sortedTokens = sortTokensWithCoreFirst(tokens);
+
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
@@ -109,35 +118,73 @@ export default function TokenTable({ tokens = [], loading = false }: TokenTableP
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {tokens.map((token) => {
+            {sortedTokens.map((token) => {
               const isPositive = token.change24h >= 0;
+              const isCoreToken = token.symbol === "CORE";
+              const displaySymbol = formatTokenSymbol(token.symbol, token.denom || token.symbol);
+              const displayName = formatTokenName(token.name, token.denom || token.name);
+              
               return (
                 <tr
-                  key={token.symbol}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  key={token.denom || token.symbol}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                    isCoreToken ? "bg-purple-50/30 dark:bg-purple-900/10" : ""
+                  }`}
                 >
                   {/* Asset */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                        {token.symbol.charAt(0)}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                        isCoreToken 
+                          ? "bg-gradient-to-br from-purple-600 to-blue-600" 
+                          : "bg-gradient-to-br from-gray-500 to-gray-600"
+                      }`}>
+                        {isCoreToken ? <Coins className="w-5 h-5" /> : displaySymbol.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">
-                          {token.symbol}
+                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          {displaySymbol}
+                          {isCoreToken && (
+                            <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
+                              Native
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {token.name}
+                          {displayName}
                         </div>
                       </div>
                     </div>
                   </td>
 
                   {/* Balance */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {token.balance}
-                    </div>
+                  <td className="px-6 py-4">
+                    {isCoreToken && (token.available || token.staked || token.rewards) ? (
+                      <div className="space-y-1">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white">
+                          {token.balance}
+                        </div>
+                        {token.available && (
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Available: {token.available}
+                          </div>
+                        )}
+                        {token.staked && parseFloat(token.staked) > 0 && (
+                          <div className="text-xs text-purple-600 dark:text-purple-400">
+                            Staked: {token.staked}
+                          </div>
+                        )}
+                        {token.rewards && parseFloat(token.rewards) > 0 && (
+                          <div className="text-xs text-green-600 dark:text-green-400">
+                            Rewards: {token.rewards}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {token.balance}
+                      </div>
+                    )}
                   </td>
 
                   {/* Value */}
