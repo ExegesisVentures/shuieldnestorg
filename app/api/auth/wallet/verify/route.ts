@@ -37,12 +37,8 @@ export async function POST(req: Request) {
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
     if (!authUser) {
-      // Scenario 2: Wallet-bootstrap - create user account
-      // Try anonymous auth first (requires it to be enabled in Supabase)
-      let signUpData;
-      let signUpError;
-      
-      const anonResult = await supabase.auth.signInAnonymously({
+      // Scenario 2: Wallet-bootstrap - create user account via anonymous auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signInAnonymously({
         options: {
           data: {
             wallet_bootstrap: true,
@@ -52,7 +48,7 @@ export async function POST(req: Request) {
       });
 
       // Check if anonymous auth is disabled
-      if (anonResult.error?.message?.includes("Anonymous sign-ins are disabled")) {
+      if (signUpError?.message?.includes("Anonymous sign-ins are disabled")) {
         return NextResponse.json(
           uiError(
             "ANONYMOUS_AUTH_DISABLED",
@@ -62,9 +58,6 @@ export async function POST(req: Request) {
           { status: 500 }
         );
       }
-
-      signUpData = anonResult.data;
-      signUpError = anonResult.error;
 
       if (signUpError || !signUpData.user) {
         return NextResponse.json(
