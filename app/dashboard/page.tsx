@@ -46,12 +46,33 @@ export default function Dashboard() {
       setIsAuthenticated(!!user);
 
       if (user) {
+        // AUTHENTICATED USER MODE
         // Get user's public_user_id
-        const { data: profile } = await supabase
+        let { data: profile } = await supabase
           .from("user_profiles")
           .select("public_user_id")
           .eq("auth_user_id", user.id)
-          .single();
+          .maybeSingle();
+
+        // If no profile exists, create one
+        if (!profile?.public_user_id) {
+          console.log("No user profile found, creating one...");
+          try {
+            const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
+            await ensurePublicUserProfile(supabase);
+            
+            // Re-fetch profile
+            const result = await supabase
+              .from("user_profiles")
+              .select("public_user_id")
+              .eq("auth_user_id", user.id)
+              .maybeSingle();
+            
+            profile = result.data;
+          } catch (error) {
+            console.error("Failed to create user profile:", error);
+          }
+        }
 
         if (profile?.public_user_id) {
           // Fetch wallets
@@ -65,11 +86,6 @@ export default function Dashboard() {
             
             setTokens(aggregated);
             setTotalValue(totalValueUsd);
-            
-            // Store portfolio value for upgrade triggers (visitors only)
-            if (!user) {
-              updatePortfolioValue(totalValueUsd);
-            }
             
             // Calculate weighted average 24h change
             if (totalValueUsd > 0) {
@@ -88,7 +104,7 @@ export default function Dashboard() {
           }
         }
       } else {
-        // Not authenticated - visitor mode with local storage
+        // VISITOR MODE - use localStorage
         const visitorAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
         setWalletCount(visitorAddresses.length);
 
@@ -99,6 +115,9 @@ export default function Dashboard() {
           
           setTokens(aggregated);
           setTotalValue(totalValueUsd);
+          
+          // Store portfolio value for upgrade triggers
+          updatePortfolioValue(totalValueUsd);
           
           // Calculate weighted average 24h change
           if (totalValueUsd > 0) {
