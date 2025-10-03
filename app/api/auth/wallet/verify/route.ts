@@ -55,10 +55,19 @@ export async function POST(req: Request) {
 
     // Check if user is authenticated using session client (has access to cookies)
     console.log("Checking user authentication...");
+    
+    // Try getting session first (more reliable for cookie-based auth)
+    const { data: { session }, error: sessionError } = await sessionClient.auth.getSession();
+    console.log("Session check:", {
+      hasSession: !!session,
+      sessionError: sessionError?.message,
+    });
+    
     const { data: { user: authUser }, error: authError } = await sessionClient.auth.getUser();
     console.log("Auth check:", { 
       isAuthenticated: !!authUser, 
       userId: authUser?.id,
+      userEmail: authUser?.email,
       authError: authError?.message 
     });
 
