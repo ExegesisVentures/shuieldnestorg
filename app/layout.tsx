@@ -12,8 +12,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Update Starter Kit",
-  description: "The fastest way to build apps with Next.js and Update",
+  title: "ShieldNest | Coreum Portfolio & Membership Platform",
+  description: "Track your Coreum portfolio, connect multiple wallets, and unlock exclusive features with Shield NFT membership.",
 };
 
 export default function RootLayout({
