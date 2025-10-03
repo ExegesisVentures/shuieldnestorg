@@ -10,7 +10,7 @@ export default function ExitIntentPrompt() {
   }, []);
   if (!show) return null;
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100]">
       <div className="bg-white rounded-xl p-6 max-w-md w-full">
         <h3 className="text-lg font-semibold">Save your portfolio</h3>
         <p className="text-sm text-gray-600 mt-2">Create a free account to keep your addresses and get updates.</p>

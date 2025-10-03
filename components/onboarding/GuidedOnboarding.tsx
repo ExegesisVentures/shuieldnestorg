@@ -185,7 +185,7 @@ export default function GuidedOnboarding({ isOpen, onClose }: GuidedOnboardingPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
         {/* Progress bar */}
         <div className="h-1.5 bg-gray-200 dark:bg-gray-700">
