@@ -4,9 +4,10 @@ import { useState } from "react";
 import { X, Mail, Wallet as WalletIcon } from "lucide-react";
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/auth-submit-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useFormStatus } from "react-dom";
 import WalletButton from "@/components/wallet/WalletButton";
 import ManualAddressInput from "@/components/wallet/ManualAddressInput";
 import { useWalletConnect } from "@/hooks/useWalletConnect";
@@ -18,6 +19,15 @@ interface SignInModalProps {
 }
 
 type TabType = "email" | "wallet";
+
+function EmailSignInButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? "Signing in..." : "Sign In"}
+    </Button>
+  );
+}
 
 export default function SignInModal({
   isOpen,
@@ -157,9 +167,7 @@ export default function SignInModal({
                     autoComplete="current-password"
                   />
                 </div>
-                <SubmitButton pendingText="Signing in...">
-                  Sign In
-                </SubmitButton>
+                <EmailSignInButton />
               </form>
 
               <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
