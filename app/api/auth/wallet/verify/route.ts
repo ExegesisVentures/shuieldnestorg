@@ -141,7 +141,6 @@ export async function POST(req: Request) {
         read_only: false,
         is_primary: true,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
 
       if (walletError) {
@@ -242,7 +241,6 @@ export async function POST(req: Request) {
       read_only: false,
       is_primary: isPrimary,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     });
 
     if (walletError) {

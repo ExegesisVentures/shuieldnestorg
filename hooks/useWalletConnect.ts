@@ -319,7 +319,6 @@ export function useWalletConnect() {
         read_only: true,
         is_primary: isPrimary,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
 
       if (insertError) {

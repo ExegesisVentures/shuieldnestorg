@@ -127,7 +127,6 @@ export async function migrateVisitorWallets(
         read_only: wallet.read_only !== false, // Default to true
         is_primary: isPrimary,
         created_at: wallet.added_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
 
       if (error) {
