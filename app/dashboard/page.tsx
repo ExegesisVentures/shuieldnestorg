@@ -107,7 +107,7 @@ export default function Dashboard() {
           </h2>
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p>Token balances coming soon...</p>
-            <p className="text-sm mt-2">We're working on integrating Coreum RPC for real-time balance tracking</p>
+            <p className="text-sm mt-2">We&apos;re working on integrating Coreum RPC for real-time balance tracking</p>
           </div>
         </div>
       </div>

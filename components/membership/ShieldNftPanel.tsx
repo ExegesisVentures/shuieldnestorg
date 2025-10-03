@@ -3,6 +3,7 @@
 import { Shield, ExternalLink, Ban } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface ShieldNftPanelProps {
   imageUrl?: string | null;
@@ -34,10 +35,11 @@ export default function ShieldNftPanel({
       {/* NFT Image */}
       <div className="relative h-64 bg-gradient-to-br from-purple-600 via-blue-600 to-purple-800 flex items-center justify-center">
         {imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt="Shield NFT"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         ) : (
           <div className="text-center text-white">
