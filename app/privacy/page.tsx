@@ -37,7 +37,7 @@ export default function PrivacyPage() {
               Introduction
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              ShieldNest ("we", "our", or "us") is committed to protecting your privacy. 
+              ShieldNest (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your privacy. 
               This Privacy Policy explains how we collect, use, disclose, and safeguard your 
               information when you use our Coreum portfolio management and membership platform.
             </p>
@@ -187,7 +187,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              Children's Privacy
+              Children&apos;s Privacy
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               ShieldNest is not intended for users under the age of 18. We do not knowingly 
@@ -202,8 +202,8 @@ export default function PrivacyPage() {
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               We may update this Privacy Policy from time to time. We will notify you of any 
-              material changes by posting the new policy on this page and updating the "Last 
-              updated" date. We encourage you to review this policy periodically.
+              material changes by posting the new policy on this page and updating the &quot;Last 
+              updated&quot; date. We encourage you to review this policy periodically.
             </p>
           </section>
 

@@ -187,7 +187,7 @@ export default function TermsPage() {
                 IMPORTANT DISCLAIMER
               </p>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                ShieldNest is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, 
+                ShieldNest is provided &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; without warranties of any kind, 
                 either express or implied. We do not guarantee that the platform will be uninterrupted, 
                 secure, or error-free. We are not responsible for the accuracy of blockchain data, 
                 third-party services, or wallet providers.
@@ -230,7 +230,7 @@ export default function TermsPage() {
               Coming Soon Features
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Features marked as "Coming Soon" (such as DEX trading and NFT sell-back) are 
+              Features marked as &quot;Coming Soon&quot; (such as DEX trading and NFT sell-back) are 
               not yet available. We make no guarantees about when or if these features will 
               be implemented. Descriptions of future features are not binding commitments.
             </p>
@@ -254,7 +254,7 @@ export default function TermsPage() {
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               We may modify these Terms at any time. We will notify users of material changes 
-              by posting the updated Terms on this page and updating the "Last updated" date. 
+              by posting the updated Terms on this page and updating the &quot;Last updated&quot; date. 
               Your continued use of ShieldNest after changes constitutes acceptance of the 
               new Terms.
             </p>

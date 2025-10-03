@@ -56,9 +56,9 @@ export default function PmaPage() {
               Agreement Overview
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              This Private Membership Agreement ("PMA" or "Agreement") is entered into between 
-              ShieldNest ("Organization", "we", "us") and the individual or entity holding a 
-              valid Shield NFT ("Member", "you"). This agreement is supplemental to the 
+              This Private Membership Agreement (&quot;PMA&quot; or &quot;Agreement&quot;) is entered into between 
+              ShieldNest (&quot;Organization&quot;, &quot;we&quot;, &quot;us&quot;) and the individual or entity holding a 
+              valid Shield NFT (&quot;Member&quot;, &quot;you&quot;). This agreement is supplemental to the 
               ShieldNest Terms of Service and Privacy Policy.
             </p>
           </section>
@@ -235,7 +235,7 @@ export default function PmaPage() {
                 Membership does not constitute ownership or equity in ShieldNest
               </li>
               <li>
-                Future features marked as "coming soon" are not guaranteed to be implemented
+                Future features marked as &quot;coming soon&quot; are not guaranteed to be implemented
               </li>
               <li>
                 Platform availability and uptime are not guaranteed
