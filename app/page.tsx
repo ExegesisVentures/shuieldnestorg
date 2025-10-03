@@ -2,6 +2,7 @@ import { Shield, Wallet, LineChart, Lock, ArrowRight, Sparkles } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import Footer from "@/components/layout/Footer";
 
 export default function Home() {
   return (
@@ -176,6 +177,9 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
