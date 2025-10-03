@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/service-role";
 import { redirect } from "next/navigation";
 import { encodedRedirect } from "@/utils/redirect";
 import { ensurePublicUserProfile } from "@/utils/supabase/user-profile";
@@ -20,10 +21,13 @@ export const signInAction = async (formData: FormData) => {
   }
 
   // Ensure public user profile exists (for existing users who signed up before this change)
+  // Use service role client to bypass RLS
   try {
-    await ensurePublicUserProfile(client);
+    const serviceClient = createServiceRoleClient();
+    await ensurePublicUserProfile(serviceClient);
   } catch (e) {
     console.error("Failed to ensure public user profile:", e);
+    // Don't block sign-in, profile will be created on first wallet connection if needed
   }
 
   return redirect("/dashboard");
@@ -51,9 +55,11 @@ export const signUpAction = async (formData: FormData) => {
   }
 
   // Create public_users record and mapping for new user
+  // Use service role client to bypass RLS
   if (data.user) {
     try {
-      await ensurePublicUserProfile(client);
+      const serviceClient = createServiceRoleClient();
+      await ensurePublicUserProfile(serviceClient);
     } catch (e) {
       console.error("Failed to create public user profile:", e);
       return encodedRedirect("error", "/sign-up", "Account created but profile setup failed. Please contact support.");

@@ -98,11 +98,17 @@ export function useWalletConnect() {
         .maybeSingle();
 
       if (!profile?.public_user_id) {
-        // Create profile if it doesn't exist
+        // Create profile if it doesn't exist using API route (bypasses RLS)
         console.log("No user profile found, creating one...");
         try {
-          const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
-          await ensurePublicUserProfile(supabase);
+          const response = await fetch("/api/user/profile", {
+            method: "POST",
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.details || "Failed to create profile");
+          }
           
           // Re-fetch profile
           const result = await supabase
@@ -290,12 +296,18 @@ export function useWalletConnect() {
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      // If no profile exists, create one
+      // If no profile exists, create one using API route (bypasses RLS)
       if (!profile?.public_user_id) {
         console.log("No user profile found in addManualAddress, creating one...");
         try {
-          const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
-          await ensurePublicUserProfile(supabase);
+          const response = await fetch("/api/user/profile", {
+            method: "POST",
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.details || "Failed to create profile");
+          }
           
           // Re-fetch profile
           const result = await supabase

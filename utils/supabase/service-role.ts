@@ -26,3 +26,10 @@ export function createServiceRoleClient() {
   });
 }
 
+/**
+ * Alias for createServiceRoleClient for consistency
+ */
+export function getServiceRoleClient() {
+  return createServiceRoleClient();
+}
+
