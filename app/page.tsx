@@ -1,10 +1,23 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Shield, Wallet, LineChart, Lock, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import Footer from "@/components/layout/Footer";
+import WalletConnectModal from "@/components/wallet/WalletConnectModal";
 
 export default function Home() {
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const router = useRouter();
+
+  const handleWalletSuccess = () => {
+    setShowConnectModal(false);
+    router.push("/dashboard");
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -30,11 +43,13 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8" asChild>
-                <Link href="/dashboard">
-                  <Wallet className="w-5 h-5 mr-2" />
-                  Connect Wallet
-                </Link>
+              <Button 
+                size="lg" 
+                className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8"
+                onClick={() => setShowConnectModal(true)}
+              >
+                <Wallet className="w-5 h-5 mr-2" />
+                Connect Wallet
               </Button>
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8" asChild>
                 <Link href="/membership">
@@ -158,8 +173,14 @@ export default function Home() {
             <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8" asChild>
               <Link href="/sign-up">Create Free Account</Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8" asChild>
-              <Link href="/dashboard">Explore Dashboard</Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-white text-white hover:bg-white/10 text-lg px-8"
+              onClick={() => setShowConnectModal(true)}
+            >
+              <Wallet className="w-5 h-5 mr-2" />
+              Connect Wallet
             </Button>
           </div>
         </div>
@@ -180,6 +201,13 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Wallet Connect Modal */}
+      <WalletConnectModal
+        isOpen={showConnectModal}
+        onClose={() => setShowConnectModal(false)}
+        onSuccess={handleWalletSuccess}
+      />
     </div>
   );
 }
