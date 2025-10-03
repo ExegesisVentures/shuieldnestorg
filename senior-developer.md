@@ -71,5 +71,15 @@
 - Need to set for: Production, Preview, AND Development
 - After adding env vars, MUST redeploy (not automatic)
 - Server-side env vars (without NEXT_PUBLIC_) won't work if missing
-- Use `.env.example` file to document all required variables
+
+## 12. **Respect User Tiers and Don't Over-Engineer**
+- VISITOR = localStorage ONLY, NO database, NO auth
+- PUBLIC = Authenticated user with database storage
+- PRIVATE = NFT + PMA membership
+- **Don't create auth users for visitors connecting wallets!**
+- Check `auth.getUser()` FIRST - if no user, store locally
+- Only do full verification flow for authenticated users
+- Use smart triggers to prompt upgrades (3+ wallets, 5+ min session, $100+ portfolio)
+- Let visitors explore freely, nudge at strategic moments
+
 

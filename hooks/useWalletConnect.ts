@@ -27,26 +27,86 @@ export function useWalletConnect() {
     try {
       // Step 1: Get wallet address
       let address: string;
-      let signFn: (address: string, message: string) => Promise<any>;
 
       switch (walletProvider) {
         case "keplr":
           address = await keplrGetAddress();
-          signFn = keplrSignArbitrary;
           break;
         case "leap":
           address = await leapGetAddress();
-          signFn = leapSignArbitrary;
           break;
         case "cosmostation":
           address = await cosmostationGetAddress();
+          break;
+        default:
+          throw new Error("Unknown wallet provider");
+      }
+
+      // Check if user is authenticated
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        // VISITOR MODE: Just store in localStorage without signature verification
+        console.log("Visitor mode: storing wallet in localStorage");
+        
+        // Get existing addresses from localStorage
+        const existingAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
+        
+        // Check if address already exists
+        if (existingAddresses.some((w: { address: string }) => w.address === address)) {
+          return {
+            success: false,
+            error: {
+              code: "WALLET_EXISTS",
+              message: "This wallet is already connected",
+            },
+          };
+        }
+
+        // Add to local storage
+        const newWallet = {
+          address,
+          label: `${walletProvider.charAt(0).toUpperCase() + walletProvider.slice(1)} Wallet`,
+          chain_id: "coreum-mainnet-1",
+          read_only: true,
+          is_primary: existingAddresses.length === 0,
+          added_at: new Date().toISOString(),
+          provider: walletProvider,
+        };
+
+        existingAddresses.push(newWallet);
+        localStorage.setItem('visitor_addresses', JSON.stringify(existingAddresses));
+
+        // Trigger storage event for other components to react
+        window.dispatchEvent(new Event('storage'));
+
+        return {
+          success: true,
+          walletBootstrap: false,
+        };
+      }
+
+      // AUTHENTICATED USER MODE: Full signature verification flow
+      console.log("Authenticated mode: verifying wallet signature");
+      
+      let signFn: (address: string, message: string) => Promise<any>;
+      
+      switch (walletProvider) {
+        case "keplr":
+          signFn = keplrSignArbitrary;
+          break;
+        case "leap":
+          signFn = leapSignArbitrary;
+          break;
+        case "cosmostation":
           signFn = cosmostationSignArbitrary;
           break;
         default:
           throw new Error("Unknown wallet provider");
       }
 
-      // Step 2: Request nonce from API
+      // Request nonce from API
       const nonceResponse = await fetch(`/api/auth/wallet/nonce?address=${encodeURIComponent(address)}`);
       
       if (!nonceResponse.ok) {
@@ -59,13 +119,13 @@ export function useWalletConnect() {
 
       const { nonce } = await nonceResponse.json();
 
-      // Step 3: Create sign document
+      // Create sign document
       const signDoc = makeSignDoc(address, nonce);
 
-      // Step 4: Request signature from wallet
+      // Request signature from wallet
       const signatureResult = await signFn(address, signDoc);
 
-      // Step 5: Verify signature with API
+      // Verify signature with API
       const verifyResponse = await fetch("/api/auth/wallet/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
-import ExitIntentPrompt from "@/components/misc/ExitIntentPrompt";
+import SmartUpgradePrompt from "@/components/nudges/SmartUpgradePrompt";
 import WalletConnectModal from "@/components/wallet/WalletConnectModal";
 import ConnectedWallets from "@/components/wallet/ConnectedWallets";
 import PortfolioTotals from "@/components/portfolio/PortfolioTotals";
@@ -11,6 +11,7 @@ import UpgradeNudge from "@/components/nudges/UpgradeNudge";
 import { createSupabaseClient } from "@/utils/supabase/client";
 import { fetchUserWallets } from "@/utils/wallet/operations";
 import { getMultiAddressBalances, EnrichedBalance } from "@/utils/coreum/rpc";
+import { updatePortfolioValue } from "@/utils/visitor-upgrade-rules";
 
 export default function Dashboard() {
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -64,6 +65,11 @@ export default function Dashboard() {
             
             setTokens(aggregated);
             setTotalValue(totalValueUsd);
+            
+            // Store portfolio value for upgrade triggers (visitors only)
+            if (!user) {
+              updatePortfolioValue(totalValueUsd);
+            }
             
             // Calculate weighted average 24h change
             if (totalValueUsd > 0) {
@@ -199,8 +205,8 @@ export default function Dashboard() {
         onSuccess={handleConnectionSuccess}
       />
 
-      {/* Exit Intent for Visitors */}
-      {!isAuthenticated && <ExitIntentPrompt />}
+      {/* Smart Upgrade Prompt for Visitors */}
+      {!isAuthenticated && <SmartUpgradePrompt />}
     </main>
   );
 }
