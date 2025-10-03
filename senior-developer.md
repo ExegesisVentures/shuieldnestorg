@@ -82,4 +82,26 @@
 - Use smart triggers to prompt upgrades (3+ wallets, 5+ min session, $100+ portfolio)
 - Let visitors explore freely, nudge at strategic moments
 
+## 13. **Server Components Can't See Client State**
+- Server components (async functions) only see database/auth state
+- Server components **cannot** access localStorage, sessionStorage, or browser APIs
+- localStorage is client-side only - invisible to server components
+- Need hybrid approach: server checks auth, client checks localStorage
+- Use client wrappers for visitor state management
+- Listen to storage events for real-time updates across components
+- Pattern: `const user = await getUser(); return user ? <ServerMenu /> : <ClientWrapper />;`
+
+## 14. **Guided Onboarding Beats Generic Forms**
+- Traditional signup forms have high abandonment rates
+- Break complex forms into simple steps - one question per screen
+- Show progress bar for transparency
+- Validate incrementally to catch errors early
+- Auto-migrate visitor data during account creation
+- Use emoji-based visual feedback for friendliness
+- Always show user progress ("Step 2 of 5")
+- Allow back/forward navigation
+- Clean up localStorage after successful migration
+- Preserve user data during all transitions
+- Higher completion rates with focused, guided flows
+
 
