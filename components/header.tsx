@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Shield, Wallet, Menu } from "lucide-react";
+import { Shield, Wallet } from "lucide-react";
 import { createSupabaseClient } from "@/utils/supabase/server";
 import HeaderUserMenu from "@/components/header-user-menu";
 

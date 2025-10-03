@@ -13,7 +13,7 @@ import { verifyAndConsumeNonce } from "@/utils/wallet/adr36";
  */
 export async function POST(req: Request) {
   try {
-    const { address, signature, nonce, email } = await req.json();
+    const { address, signature, nonce } = await req.json();
     if (!address || !signature || !nonce) {
       return NextResponse.json(uiError("BAD_REQUEST","Missing fields"), { status: 400 });
     }
