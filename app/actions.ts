@@ -26,7 +26,7 @@ export const signInAction = async (formData: FormData) => {
     console.error("Failed to ensure public user profile:", e);
   }
 
-  return redirect("/protected");
+  return redirect("/dashboard");
 };
 
 export const signUpAction = async (formData: FormData) => {
@@ -35,8 +35,8 @@ export const signUpAction = async (formData: FormData) => {
   const client = await createSupabaseClient();
 
   const url = process.env.VERCEL_URL
-    ? `${process.env.VERCEL_URL}/protected`
-    : "http://localhost:3000/protected";
+    ? `${process.env.VERCEL_URL}/dashboard`
+    : "http://localhost:3000/dashboard";
 
   const { data, error } = await client.auth.signUp({
     email,
@@ -60,11 +60,11 @@ export const signUpAction = async (formData: FormData) => {
     }
   }
 
-  return redirect("/protected");
+  return redirect("/dashboard");
 };
 
 export const signOutAction = async () => {
   const client = await createSupabaseClient();
   await client.auth.signOut();
-  return redirect("/sign-in");
+  return redirect("/");
 };
