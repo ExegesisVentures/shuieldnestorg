@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { uiError } from "@/utils/errors";
 import { createServiceRoleClient } from "@/utils/supabase/service-role";
+import { createSupabaseClient } from "@/utils/supabase/server";
 import { ensurePublicUserProfile, getPublicUserId } from "@/utils/supabase/user-profile";
 import { verifyAndConsumeNonce } from "@/utils/wallet/adr36";
 
@@ -20,11 +21,12 @@ export async function POST(req: Request) {
 
     // TODO: Use publicKey for ADR-36 signature verification with cosmjs
 
-    // Use service role client to bypass RLS for user creation
-    const supabase = createServiceRoleClient();
+    // Create both clients: one for session detection, one for RLS bypass
+    const sessionClient = await createSupabaseClient();
+    const serviceClient = createServiceRoleClient();
 
-    // Verify nonce is valid and not expired
-    const nonceCheck = await verifyAndConsumeNonce(supabase, nonce, address);
+    // Verify nonce is valid and not expired (using service client for RLS bypass)
+    const nonceCheck = await verifyAndConsumeNonce(serviceClient, nonce, address);
     if (!nonceCheck.valid) {
       return NextResponse.json(
         uiError("NONCE_INVALID", nonceCheck.error || "Invalid or expired nonce."),
@@ -34,12 +36,12 @@ export async function POST(req: Request) {
 
     // TODO: verify ADR-36 signature properly (cosmjs). For MVP we accept and mark as unverified.
 
-    // Check if user is authenticated
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    // Check if user is authenticated using session client (has access to cookies)
+    const { data: { user: authUser } } = await sessionClient.auth.getUser();
 
     if (!authUser) {
       // Scenario 2: Wallet-bootstrap - create user account via anonymous auth
-      const { data: signUpData, error: signUpError } = await supabase.auth.signInAnonymously({
+      const { data: signUpData, error: signUpError } = await serviceClient.auth.signInAnonymously({
         options: {
           data: {
             wallet_bootstrap: true,
@@ -67,11 +69,11 @@ export async function POST(req: Request) {
         );
       }
 
-      // Create public user profile and mapping
-      const publicUserId = await ensurePublicUserProfile(supabase);
+      // Create public user profile and mapping (using service client for RLS bypass)
+      const publicUserId = await ensurePublicUserProfile(serviceClient);
 
       // Link wallet to new public user
-      const { error: walletError } = await supabase.from("wallets").insert({
+      const { error: walletError } = await serviceClient.from("wallets").insert({
         user_id: publicUserId,
         user_scope: "public",
         chain_id: "coreum-mainnet-1",
@@ -100,12 +102,12 @@ export async function POST(req: Request) {
     }
 
     // Scenario 1: Authenticated user linking additional wallet
-    const publicUserId = await getPublicUserId(supabase);
+    const publicUserId = await getPublicUserId(serviceClient);
     
     if (!publicUserId) {
       // Create public profile if it doesn't exist
-      await ensurePublicUserProfile(supabase);
-      const newPublicUserId = await getPublicUserId(supabase);
+      await ensurePublicUserProfile(serviceClient);
+      const newPublicUserId = await getPublicUserId(serviceClient);
       
       if (!newPublicUserId) {
         return NextResponse.json(
@@ -115,10 +117,10 @@ export async function POST(req: Request) {
       }
     }
 
-    const finalPublicUserId = publicUserId || await getPublicUserId(supabase);
+    const finalPublicUserId = publicUserId || await getPublicUserId(serviceClient);
 
     // Check if wallet already exists for this user
-    const { data: existingWallet } = await supabase
+    const { data: existingWallet } = await serviceClient
       .from("wallets")
       .select("id")
       .eq("address", address)
@@ -136,7 +138,7 @@ export async function POST(req: Request) {
     }
 
     // Check if this is the first wallet (should be primary)
-    const { data: walletCount } = await supabase
+    const { data: walletCount } = await serviceClient
       .from("wallets")
       .select("id", { count: "exact", head: true })
       .eq("user_id", finalPublicUserId)
@@ -145,7 +147,7 @@ export async function POST(req: Request) {
     const isPrimary = (walletCount || 0) === 0;
 
     // Link wallet to authenticated user
-    const { error: walletError } = await supabase.from("wallets").insert({
+    const { error: walletError } = await serviceClient.from("wallets").insert({
       user_id: finalPublicUserId,
       user_scope: "public",
       chain_id: "coreum-mainnet-1",
