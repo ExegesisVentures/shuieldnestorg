@@ -1,14 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { Shield, Lock, Sparkles, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import GuidedOnboarding from "@/components/onboarding/GuidedOnboarding";
 
 interface MembershipCTAProps {
   userType: "visitor" | "public" | "private";
 }
 
 export default function MembershipCTA({ userType }: MembershipCTAProps) {
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleSignUpClick = () => {
+    setShowOnboarding(true);
+  };
+
   if (userType === "private") {
     return (
       <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-8">
@@ -68,7 +76,7 @@ export default function MembershipCTA({ userType }: MembershipCTAProps) {
       </div>
 
       {/* CTA */}
-      <Button size="lg" className="w-full">
+      <Button size="lg" className="w-full" onClick={handleSignUpClick}>
         {userType === "visitor" ? "Sign Up to Request Membership" : "Request Membership"}
         <ArrowRight className="w-4 h-4 ml-2" />
       </Button>
@@ -78,6 +86,12 @@ export default function MembershipCTA({ userType }: MembershipCTAProps) {
           Start by creating a free account to save your portfolio
         </p>
       )}
+
+      {/* Guided Onboarding Modal */}
+      <GuidedOnboarding
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
     </Card>
   );
 }

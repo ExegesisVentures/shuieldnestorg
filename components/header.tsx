@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Shield } from "lucide-react";
 import { createSupabaseClient } from "@/utils/supabase/server";
 import HeaderUserMenu from "@/components/header-user-menu";
-import HeaderSignInButton from "@/components/header-sign-in-button";
+import HeaderClientWrapper from "@/components/header-client-wrapper";
 
 export default async function Header() {
   const client = await createSupabaseClient();
@@ -75,7 +75,7 @@ export default async function Header() {
           {user ? (
             <HeaderUserMenu user={user} />
           ) : (
-            <HeaderSignInButton />
+            <HeaderClientWrapper hasAuthUser={false} />
           )}
         </div>
       </div>
