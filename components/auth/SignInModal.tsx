@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Mail, Wallet as WalletIcon } from "lucide-react";
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
@@ -39,8 +40,14 @@ export default function SignInModal({
   const { connectWallet, addManualAddress, connecting, provider } = useWalletConnect();
   const [walletError, setWalletError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleWalletConnect = async (walletProvider: "keplr" | "leap" | "cosmostation") => {
     setWalletError(null);
@@ -79,8 +86,9 @@ export default function SignInModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 overflow-y-auto"
+      style={{ isolation: 'isolate' }}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full relative my-auto border border-gray-200 dark:border-gray-700">
         {/* Close Button */}
         <button
@@ -263,5 +271,7 @@ export default function SignInModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 

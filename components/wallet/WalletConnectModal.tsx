@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import WalletButton from "./WalletButton";
 import ManualAddressInput from "./ManualAddressInput";
@@ -20,8 +21,14 @@ export default function WalletConnectModal({
   const { connectWallet, addManualAddress, connecting, provider } = useWalletConnect();
   const [error, setError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   console.log("WalletConnectModal rendered, showManual:", showManual);
 
@@ -49,8 +56,9 @@ export default function WalletConnectModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 overflow-y-auto"
+      style={{ isolation: 'isolate' }}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative my-auto border border-gray-200 dark:border-gray-700">
         {/* Close Button */}
         <button
@@ -139,5 +147,7 @@ export default function WalletConnectModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 

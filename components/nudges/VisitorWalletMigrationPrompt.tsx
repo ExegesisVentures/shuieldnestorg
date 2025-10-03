@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createSupabaseClient } from "@/utils/supabase/client";
@@ -18,6 +19,7 @@ export default function VisitorWalletMigrationPrompt({
   onDismiss,
 }: VisitorWalletMigrationPromptProps) {
   const [migrating, setMigrating] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
     migratedCount: number;
@@ -25,7 +27,14 @@ export default function VisitorWalletMigrationPrompt({
     errors: string[];
   } | null>(null);
 
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   const visitorWallets = getVisitorWallets();
+
+  if (!mounted) return null;
 
   const handleMigrate = async () => {
     setMigrating(true);
@@ -57,8 +66,9 @@ export default function VisitorWalletMigrationPrompt({
 
   // If migration is complete, show success message
   if (result && (result.success || result.migratedCount > 0)) {
-    return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+    const successContent = (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        style={{ isolation: 'isolate' }}>
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
           <div className="text-center">
             <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -79,12 +89,14 @@ export default function VisitorWalletMigrationPrompt({
         </div>
       </div>
     );
+    return createPortal(successContent, document.body);
   }
 
   // If migration failed, show error
   if (result && !result.success && result.errors.length > 0) {
-    return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+    const errorContent = (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        style={{ isolation: 'isolate' }}>
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
           <button
             onClick={onDismiss}
@@ -115,11 +127,13 @@ export default function VisitorWalletMigrationPrompt({
         </div>
       </div>
     );
+    return createPortal(errorContent, document.body);
   }
 
   // Main migration prompt
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  const promptContent = (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      style={{ isolation: 'isolate' }}>
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
         <button
           onClick={onDismiss}
@@ -195,5 +209,7 @@ export default function VisitorWalletMigrationPrompt({
       </div>
     </div>
   );
+
+  return createPortal(promptContent, document.body);
 }
 
