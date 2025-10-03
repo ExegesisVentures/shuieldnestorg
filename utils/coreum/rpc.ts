@@ -3,6 +3,8 @@
  * Handles interactions with Coreum blockchain for balance queries
  */
 
+import { getTokenMetadata } from "./token-registry";
+
 const COREUM_RPC_ENDPOINT = process.env.NEXT_PUBLIC_COREUM_RPC || "https://full-node.mainnet-1.coreum.dev:26657";
 const COREUM_REST_ENDPOINT = process.env.NEXT_PUBLIC_COREUM_REST || "https://full-node.mainnet-1.coreum.dev:1317";
 
@@ -106,22 +108,24 @@ export async function fetchRewards(address: string): Promise<string> {
 
 /**
  * Get token metadata (symbol, name, decimals)
- * In v1, we'll use a static mapping. In v2, fetch from chain or registry.
+ * Uses comprehensive token registry
  */
 export function getTokenInfo(denom: string): TokenInfo {
-  // Static token mapping for common Coreum tokens
-  const tokenMap: Record<string, TokenInfo> = {
-    "ucore": {
-      symbol: "CORE",
-      name: "Coreum",
-      denom: "ucore",
-      decimals: 6,
-      logo: undefined,
-    },
-    // Add more tokens as needed
-  };
+  // Check token registry first
+  const metadata = getTokenMetadata(denom);
+  
+  if (metadata) {
+    return {
+      symbol: metadata.symbol,
+      name: metadata.name,
+      denom: metadata.denom,
+      decimals: metadata.decimals,
+      logo: metadata.logo,
+    };
+  }
 
-  return tokenMap[denom] || {
+  // Fallback for unknown tokens
+  return {
     symbol: denom.toUpperCase(),
     name: denom,
     denom,
@@ -131,6 +135,7 @@ export function getTokenInfo(denom: string): TokenInfo {
 
 /**
  * Format token amount based on decimals
+ * Max 4 decimal places for display
  */
 export function formatTokenAmount(amount: string, decimals: number = 6): string {
   const numAmount = BigInt(amount);
@@ -143,31 +148,51 @@ export function formatTokenAmount(amount: string, decimals: number = 6): string 
   }
   
   const fractionalStr = fractionalPart.toString().padStart(decimals, "0");
-  const trimmedFractional = fractionalStr.replace(/0+$/, "");
+  // Trim trailing zeros, but keep max 4 decimal places
+  const trimmedFractional = fractionalStr.replace(/0+$/, "").substring(0, 4);
+  
+  if (trimmedFractional === "") {
+    return integerPart.toString();
+  }
   
   return `${integerPart}.${trimmedFractional}`;
 }
 
 /**
- * Get USD price for a token (mock for v1)
- * TODO: Integrate with CoinGecko or similar price API
+ * Get USD price for a token
+ * TODO: Integrate with CoinGecko API for real-time prices
  */
 export async function getTokenPrice(symbol: string): Promise<number> {
-  // Mock prices for v1
+  // Mock prices for v1 - TODO: Replace with CoinGecko API
   const mockPrices: Record<string, number> = {
-    "CORE": 0.25, // Example price
+    "CORE": 0.25,
+    "DROP": 0.18,
+    "AWKT": 0.05,
+    "COZY": 0.12,
+    "KONG": 0.08,
+    "MART": 0.15,
+    "XRP": 0.52, // Wrapped XRP follows XRP price
+    "ULP": 1.00, // LP tokens typically $1 base
   };
   
   return mockPrices[symbol] || 0;
 }
 
 /**
- * Get 24h price change percentage (mock for v1)
+ * Get 24h price change percentage
+ * TODO: Integrate with CoinGecko API for real-time changes
  */
 export async function getTokenChange24h(symbol: string): Promise<number> {
-  // Mock changes for v1
+  // Mock changes for v1 - TODO: Replace with CoinGecko API
   const mockChanges: Record<string, number> = {
     "CORE": 5.2,
+    "DROP": 3.5,
+    "AWKT": -1.2,
+    "COZY": 2.8,
+    "KONG": 7.5,
+    "MART": -0.5,
+    "XRP": 1.8,
+    "ULP": 0.1,
   };
   
   return mockChanges[symbol] || 0;
