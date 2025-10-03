@@ -6,41 +6,81 @@ import ExitIntentPrompt from "@/components/misc/ExitIntentPrompt";
 import WalletConnectModal from "@/components/wallet/WalletConnectModal";
 import ConnectedWallets from "@/components/wallet/ConnectedWallets";
 import PortfolioTotals from "@/components/portfolio/PortfolioTotals";
+import TokenTable from "@/components/portfolio/TokenTable";
 import UpgradeNudge from "@/components/nudges/UpgradeNudge";
 import { createSupabaseClient } from "@/utils/supabase/client";
+import { fetchUserWallets } from "@/utils/wallet/operations";
+import { getMultiAddressBalances, EnrichedBalance } from "@/utils/coreum/rpc";
 
 export default function Dashboard() {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [walletCount, setWalletCount] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
+  const [change24h, setChange24h] = useState(0);
+  const [tokens, setTokens] = useState<EnrichedBalance[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    loadDashboardData();
   }, [refreshCounter]);
 
-  const checkAuth = async () => {
-    const supabase = createSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    setIsAuthenticated(!!user);
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
 
-    if (user) {
-      // Get wallet count
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("public_user_id")
-        .eq("auth_user_id", user.id)
-        .single();
+      if (user) {
+        // Get user's public_user_id
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("public_user_id")
+          .eq("auth_user_id", user.id)
+          .single();
 
-      if (profile?.public_user_id) {
-        const { count } = await supabase
-          .from("wallets")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", profile.public_user_id)
-          .eq("user_scope", "public");
-        
-        setWalletCount(count || 0);
+        if (profile?.public_user_id) {
+          // Fetch wallets
+          const wallets = await fetchUserWallets(supabase, profile.public_user_id, "public");
+          setWalletCount(wallets.length);
+
+          if (wallets.length > 0) {
+            // Fetch balances for all wallets
+            const addresses = wallets.map((w) => w.address);
+            const { aggregated, totalValueUsd } = await getMultiAddressBalances(addresses);
+            
+            setTokens(aggregated);
+            setTotalValue(totalValueUsd);
+            
+            // Calculate weighted average 24h change
+            if (totalValueUsd > 0) {
+              const weightedChange = aggregated.reduce((acc, token) => {
+                const weight = token.valueUsd / totalValueUsd;
+                return acc + (token.change24h * weight);
+              }, 0);
+              setChange24h(weightedChange);
+            } else {
+              setChange24h(0);
+            }
+          } else {
+            setTokens([]);
+            setTotalValue(0);
+            setChange24h(0);
+          }
+        }
+      } else {
+        // Not authenticated - visitor mode
+        setWalletCount(0);
+        setTokens([]);
+        setTotalValue(0);
+        setChange24h(0);
       }
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,10 +115,10 @@ export default function Dashboard() {
         {/* Portfolio Totals */}
         <div className="mb-6">
           <PortfolioTotals
-            totalValue={0} // TODO: Calculate from wallet balances
-            change24h={0} // TODO: Get from price API
+            totalValue={totalValue}
+            change24h={change24h}
             walletCount={walletCount}
-            loading={false}
+            loading={loading}
           />
         </div>
 
@@ -100,15 +140,22 @@ export default function Dashboard() {
           <ConnectedWallets onRefresh={refreshCounter} />
         </div>
 
-        {/* Token Holdings - Coming Soon */}
+        {/* Token Holdings */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
             Token Holdings
           </h2>
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <p>Token balances coming soon...</p>
-            <p className="text-sm mt-2">We&apos;re working on integrating Coreum RPC for real-time balance tracking</p>
-          </div>
+          <TokenTable 
+            tokens={tokens.map(t => ({
+              symbol: t.symbol,
+              name: t.name,
+              balance: t.balanceFormatted,
+              valueUsd: t.valueUsd,
+              change24h: t.change24h,
+              logoUrl: t.logoUrl,
+            }))}
+            loading={loading}
+          />
         </div>
       </div>
 

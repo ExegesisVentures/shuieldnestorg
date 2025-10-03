@@ -1,43 +1,90 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddressList from "@/components/portfolio/AddressList";
 import WalletConnectModal from "@/components/wallet/WalletConnectModal";
+import { createSupabaseClient } from "@/utils/supabase/client";
+import { fetchUserWallets, deleteWallet, updateWalletLabel } from "@/utils/wallet/operations";
 
 export default function WalletsPage() {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [addresses, setAddresses] = useState<Array<{
+    id: string;
+    address: string;
+    label: string;
+    chain: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for now - TODO: fetch from Supabase
-  const mockAddresses = [
-    {
-      id: "1",
-      address: "core1abcdefghijklmnopqrstuvwxyz1234567890",
-      label: "Main Wallet",
-      chain: "Coreum",
-    },
-    {
-      id: "2",
-      address: "core1zyxwvutsrqponmlkjihgfedcba0987654321",
-      label: "Trading Wallet",
-      chain: "Coreum",
-    },
-  ];
+  useEffect(() => {
+    loadWallets();
+  }, [refreshCounter]);
+
+  const loadWallets = async () => {
+    setLoading(true);
+    try {
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setAddresses([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("public_user_id")
+        .eq("auth_user_id", user.id)
+        .single();
+
+      if (profile?.public_user_id) {
+        const wallets = await fetchUserWallets(supabase, profile.public_user_id, "public");
+        setAddresses(wallets.map(w => ({
+          id: w.id,
+          address: w.address,
+          label: w.label,
+          chain: "Coreum",
+        })));
+      } else {
+        setAddresses([]);
+      }
+    } catch (error) {
+      console.error("Error loading wallets:", error);
+      setAddresses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAdd = () => {
     setShowConnectModal(true);
   };
 
-  const handleEdit = (id: string) => {
-    // TODO: implement edit functionality
-    console.log("Edit address:", id);
+  const handleEdit = async (id: string) => {
+    const newLabel = prompt("Enter new label:");
+    if (newLabel) {
+      const supabase = createSupabaseClient();
+      const result = await updateWalletLabel(supabase, id, newLabel);
+      if (result.success) {
+        loadWallets();
+      } else {
+        alert(result.error?.message || "Failed to update label");
+      }
+    }
   };
 
   const handleDelete = async (id: string) => {
-    // TODO: implement delete functionality
-    console.log("Delete address:", id);
+    const supabase = createSupabaseClient();
+    const result = await deleteWallet(supabase, id);
+    if (result.success) {
+      loadWallets();
+    } else {
+      alert(result.error?.message || "Failed to delete wallet");
+    }
   };
 
   const handleConnectionSuccess = () => {
@@ -72,8 +119,8 @@ export default function WalletsPage() {
 
       {/* Address List */}
       <AddressList
-        addresses={mockAddresses}
-        loading={false}
+        addresses={addresses}
+        loading={loading}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
