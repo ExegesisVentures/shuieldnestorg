@@ -1,13 +1,16 @@
 "use client";
 
-import { TrendingUp, DollarSign, Wallet } from "lucide-react";
+import { TrendingUp, DollarSign } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import CollapsibleWalletCard from "./CollapsibleWalletCard";
 
 interface PortfolioTotalsProps {
   totalValue?: number;
   change24h?: number;
   walletCount?: number;
   loading?: boolean;
+  onAddWallet?: () => void;
+  onRefresh?: number;
 }
 
 export default function PortfolioTotals({
@@ -15,6 +18,8 @@ export default function PortfolioTotals({
   change24h = 0,
   walletCount = 0,
   loading = false,
+  onAddWallet,
+  onRefresh,
 }: PortfolioTotalsProps) {
   const isPositive = change24h >= 0;
 
@@ -84,22 +89,13 @@ export default function PortfolioTotals({
         </div>
       </Card>
 
-      {/* Wallet Count */}
-      <Card className="p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Connected Wallets
-            </p>
-            <h3 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {walletCount}
-            </h3>
-          </div>
-          <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl">
-            <Wallet className="w-6 h-6 text-white" />
-          </div>
-        </div>
-      </Card>
+      {/* Collapsible Wallet Card */}
+      <CollapsibleWalletCard
+        walletCount={walletCount}
+        loading={loading}
+        onAddWallet={onAddWallet || (() => {})}
+        onRefresh={onRefresh}
+      />
     </div>
   );
 }

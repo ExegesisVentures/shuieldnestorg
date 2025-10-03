@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
 import SmartUpgradePrompt from "@/components/nudges/SmartUpgradePrompt";
 import VisitorWalletMigrationPrompt from "@/components/nudges/VisitorWalletMigrationPrompt";
 import WalletConnectModal from "@/components/wallet/WalletConnectModal";
-import ConnectedWallets from "@/components/wallet/ConnectedWallets";
 import PortfolioTotals from "@/components/portfolio/PortfolioTotals";
+import CoreumBreakdown from "@/components/portfolio/CoreumBreakdown";
 import TokenTable from "@/components/portfolio/TokenTable";
 import UpgradeNudge from "@/components/nudges/UpgradeNudge";
 import { createSupabaseClient } from "@/utils/supabase/client";
-import { fetchUserWallets } from "@/utils/wallet/operations";
+import { fetchUserWallets, Wallet } from "@/utils/wallet/operations";
 import { getMultiAddressBalances, EnrichedBalance } from "@/utils/coreum/rpc";
 import { updatePortfolioValue } from "@/utils/visitor-upgrade-rules";
 import { hasVisitorWallets, isMigrationCompleted } from "@/utils/visitor-wallet-migration";
@@ -25,6 +24,8 @@ export default function Dashboard() {
   const [totalValue, setTotalValue] = useState(0);
   const [change24h, setChange24h] = useState(0);
   const [tokens, setTokens] = useState<EnrichedBalance[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [tokensByAddress, setTokensByAddress] = useState<Record<string, EnrichedBalance[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,15 +75,17 @@ export default function Dashboard() {
           }
           
           // Fetch wallets
-          const wallets = await fetchUserWallets(supabase, profile.public_user_id, "public");
-          setWalletCount(wallets.length);
+          const fetchedWallets = await fetchUserWallets(supabase, profile.public_user_id, "public");
+          setWallets(fetchedWallets);
+          setWalletCount(fetchedWallets.length);
 
-          if (wallets.length > 0) {
+          if (fetchedWallets.length > 0) {
             // Fetch balances for all wallets
-            const addresses = wallets.map((w) => w.address);
-            const { aggregated, totalValueUsd } = await getMultiAddressBalances(addresses);
+            const addresses = fetchedWallets.map((w) => w.address);
+            const { aggregated, totalValueUsd, byAddress } = await getMultiAddressBalances(addresses);
             
             setTokens(aggregated);
+            setTokensByAddress(byAddress);
             setTotalValue(totalValueUsd);
             
             // Calculate weighted average 24h change
@@ -109,9 +112,10 @@ export default function Dashboard() {
         if (visitorAddresses.length > 0) {
           // Fetch balances for visitor addresses
           const addresses = visitorAddresses.map((w: { address: string }) => w.address);
-          const { aggregated, totalValueUsd } = await getMultiAddressBalances(addresses);
+          const { aggregated, totalValueUsd, byAddress } = await getMultiAddressBalances(addresses);
           
           setTokens(aggregated);
+          setTokensByAddress(byAddress);
           setTotalValue(totalValueUsd);
           
           // Store portfolio value for upgrade triggers
@@ -184,26 +188,49 @@ export default function Dashboard() {
             change24h={change24h}
             walletCount={walletCount}
             loading={loading}
+            onAddWallet={() => setShowConnectModal(true)}
+            onRefresh={refreshCounter}
           />
         </div>
 
-        {/* Connected Wallets Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Your Wallets
-            </h2>
-            <button
-              onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Wallet</span>
-            </button>
-          </div>
-
-          <ConnectedWallets onRefresh={refreshCounter} />
-        </div>
+        {/* COREUM Balance Breakdown */}
+        {(() => {
+          if (walletCount > 0 && Object.keys(tokensByAddress).length > 0) {
+            // Build per-wallet COREUM breakdown
+            const coreumByWallet = isAuthenticated 
+              ? wallets.map(w => {
+                  const walletTokens = tokensByAddress[w.address] || [];
+                  const coreumToken = walletTokens.find(t => t.symbol === 'COREUM');
+                  return {
+                    address: w.address,
+                    label: w.label,
+                    available: coreumToken?.available || "0",
+                    staked: coreumToken?.staked || "0",
+                    rewards: coreumToken?.rewards || "0",
+                    unbonding: "0", // TODO: Add unbonding data from RPC
+                  };
+                })
+              : JSON.parse(localStorage.getItem('visitor_addresses') || '[]').map((w: any) => {
+                  const walletTokens = tokensByAddress[w.address] || [];
+                  const coreumToken = walletTokens.find((t: EnrichedBalance) => t.symbol === 'COREUM');
+                  return {
+                    address: w.address,
+                    label: w.label || w.address.slice(0, 10) + '...',
+                    available: coreumToken?.available || "0",
+                    staked: coreumToken?.staked || "0",
+                    rewards: coreumToken?.rewards || "0",
+                    unbonding: "0",
+                  };
+                });
+            
+            return (
+              <div className="mb-6">
+                <CoreumBreakdown tokens={coreumByWallet} loading={loading} />
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Token Holdings */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
