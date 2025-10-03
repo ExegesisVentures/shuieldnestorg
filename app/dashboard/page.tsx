@@ -24,6 +24,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboardData();
+    
+    // Listen for storage changes (for visitor addresses)
+    const handleStorageChange = () => {
+      loadDashboardData();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [refreshCounter]);
 
   const loadDashboardData = async () => {
@@ -71,11 +82,33 @@ export default function Dashboard() {
           }
         }
       } else {
-        // Not authenticated - visitor mode
-        setWalletCount(0);
-        setTokens([]);
-        setTotalValue(0);
-        setChange24h(0);
+        // Not authenticated - visitor mode with local storage
+        const visitorAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
+        setWalletCount(visitorAddresses.length);
+
+        if (visitorAddresses.length > 0) {
+          // Fetch balances for visitor addresses
+          const addresses = visitorAddresses.map((w: { address: string }) => w.address);
+          const { aggregated, totalValueUsd } = await getMultiAddressBalances(addresses);
+          
+          setTokens(aggregated);
+          setTotalValue(totalValueUsd);
+          
+          // Calculate weighted average 24h change
+          if (totalValueUsd > 0) {
+            const weightedChange = aggregated.reduce((acc, token) => {
+              const weight = token.valueUsd / totalValueUsd;
+              return acc + (token.change24h * weight);
+            }, 0);
+            setChange24h(weightedChange);
+          } else {
+            setChange24h(0);
+          }
+        } else {
+          setTokens([]);
+          setTotalValue(0);
+          setChange24h(0);
+        }
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error);

@@ -21,9 +21,21 @@ export default function ConnectedWallets({ onRefresh }: ConnectedWalletsProps) {
   const [wallets, setWallets] = useState<WalletData[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [isVisitor, setIsVisitor] = useState(false);
 
   useEffect(() => {
     loadWallets();
+    
+    // Listen for storage changes (for visitor addresses)
+    const handleStorageChange = () => {
+      loadWallets();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [onRefresh]);
 
   const loadWallets = async () => {
@@ -32,10 +44,23 @@ export default function ConnectedWallets({ onRefresh }: ConnectedWalletsProps) {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setWallets([]);
+        // Visitor mode - load from localStorage
+        setIsVisitor(true);
+        const visitorAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
+        const formattedWallets = visitorAddresses.map((w: { address: string; label?: string; is_primary?: boolean; added_at?: string }, index: number) => ({
+          id: `visitor-${index}`,
+          address: w.address,
+          label: w.label || "Manual Address",
+          read_only: true,
+          is_primary: w.is_primary || false,
+          created_at: w.added_at || new Date().toISOString(),
+        }));
+        setWallets(formattedWallets);
         setLoading(false);
         return;
       }
+
+      setIsVisitor(false);
 
       // Get user's public_user_id
       const { data: profile } = await supabase
@@ -81,14 +106,29 @@ export default function ConnectedWallets({ onRefresh }: ConnectedWalletsProps) {
     setDeleting(walletId);
 
     try {
-      const supabase = createSupabaseClient();
-      const { error } = await supabase.from("wallets").delete().eq("id", walletId);
-
-      if (error) {
-        console.error("Failed to delete wallet:", error);
-        alert("Failed to remove wallet. Please try again.");
-      } else {
+      // Check if it's a visitor wallet
+      if (walletId.startsWith('visitor-')) {
+        // Delete from localStorage
+        const visitorAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
+        const index = parseInt(walletId.replace('visitor-', ''));
+        visitorAddresses.splice(index, 1);
+        localStorage.setItem('visitor_addresses', JSON.stringify(visitorAddresses));
+        
+        // Trigger storage event
+        window.dispatchEvent(new Event('storage'));
+        
         await loadWallets();
+      } else {
+        // Delete from database
+        const supabase = createSupabaseClient();
+        const { error } = await supabase.from("wallets").delete().eq("id", walletId);
+
+        if (error) {
+          console.error("Failed to delete wallet:", error);
+          alert("Failed to remove wallet. Please try again.");
+        } else {
+          await loadWallets();
+        }
       }
     } catch (error) {
       console.error("Error deleting wallet:", error);
@@ -165,8 +205,8 @@ export default function ConnectedWallets({ onRefresh }: ConnectedWalletsProps) {
               </div>
             </div>
 
-            {/* Delete Button */}
-            {!wallet.is_primary && (
+            {/* Delete Button - visitors can delete any wallet, authenticated users can't delete primary */}
+            {(isVisitor || !wallet.is_primary) && (
               <button
                 onClick={() => handleDelete(wallet.id)}
                 disabled={deleting === wallet.id}

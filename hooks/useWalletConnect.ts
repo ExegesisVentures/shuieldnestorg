@@ -127,17 +127,42 @@ export function useWalletConnect() {
       const supabase = createSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
 
+      // For visitors (not authenticated), store in local storage only
       if (!user) {
-        return {
-          success: false,
-          error: {
-            code: "NOT_AUTHENTICATED",
-            message: "You must be logged in to add addresses",
-            hint: "Please sign in first",
-          },
+        // Get existing addresses from localStorage
+        const existingAddresses = JSON.parse(localStorage.getItem('visitor_addresses') || '[]');
+        
+        // Check if address already exists
+        if (existingAddresses.some((w: { address: string }) => w.address === address)) {
+          return {
+            success: false,
+            error: {
+              code: "WALLET_EXISTS",
+              message: "This address is already added",
+            },
+          };
+        }
+
+        // Add to local storage
+        const newWallet = {
+          address,
+          label: label || "Manual Address",
+          chain_id: "coreum-mainnet-1",
+          read_only: true,
+          is_primary: existingAddresses.length === 0,
+          added_at: new Date().toISOString(),
         };
+
+        existingAddresses.push(newWallet);
+        localStorage.setItem('visitor_addresses', JSON.stringify(existingAddresses));
+
+        // Trigger a storage event for other components to react
+        window.dispatchEvent(new Event('storage'));
+
+        return { success: true };
       }
 
+      // For authenticated users, save to database
       // Get user's public_user_id
       const { data: profile } = await supabase
         .from("user_profiles")
