@@ -196,11 +196,11 @@ export default function Dashboard() {
         {/* COREUM Balance Breakdown */}
         {(() => {
           if (walletCount > 0 && Object.keys(tokensByAddress).length > 0) {
-            // Build per-wallet COREUM breakdown
+            // Build per-wallet COREUM breakdown (symbol is 'CORE' not 'COREUM')
             const coreumByWallet = isAuthenticated 
               ? wallets.map(w => {
                   const walletTokens = tokensByAddress[w.address] || [];
-                  const coreumToken = walletTokens.find(t => t.symbol === 'COREUM');
+                  const coreumToken = walletTokens.find(t => t.symbol === 'CORE');
                   return {
                     address: w.address,
                     label: w.label,
@@ -212,7 +212,7 @@ export default function Dashboard() {
                 })
               : JSON.parse(localStorage.getItem('visitor_addresses') || '[]').map((w: any) => {
                   const walletTokens = tokensByAddress[w.address] || [];
-                  const coreumToken = walletTokens.find((t: EnrichedBalance) => t.symbol === 'COREUM');
+                  const coreumToken = walletTokens.find((t: EnrichedBalance) => t.symbol === 'CORE');
                   return {
                     address: w.address,
                     label: w.label || w.address.slice(0, 10) + '...',
@@ -232,24 +232,26 @@ export default function Dashboard() {
           return null;
         })()}
 
-        {/* Token Holdings */}
+        {/* Token Holdings (excluding CORE since it's shown above) */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
             Token Holdings
           </h2>
           <TokenTable 
-            tokens={tokens.map(t => ({
-              symbol: t.symbol,
-              name: t.name,
-              balance: t.balanceFormatted,
-              valueUsd: t.valueUsd,
-              change24h: t.change24h,
-              logoUrl: t.logoUrl,
-              denom: t.denom,
-              available: t.available,
-              staked: t.staked,
-              rewards: t.rewards,
-            }))}
+            tokens={tokens
+              .filter(t => t.symbol !== 'CORE') // Exclude CORE - it's in COREUM Balance section
+              .map(t => ({
+                symbol: t.symbol,
+                name: t.name,
+                balance: t.balanceFormatted,
+                valueUsd: t.valueUsd,
+                change24h: t.change24h,
+                logoUrl: t.logoUrl,
+                denom: t.denom,
+                available: t.available,
+                staked: t.staked,
+                rewards: t.rewards,
+              }))}
             loading={loading}
           />
         </div>
