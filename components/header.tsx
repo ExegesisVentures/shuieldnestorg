@@ -31,13 +31,7 @@ export default async function Header() {
                 href="/dashboard" 
                 className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
               >
-                Dashboard
-              </Link>
-              <Link 
-                href="/membership" 
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-              >
-                Membership
+                Portfolio
               </Link>
               <Link 
                 href="/wallets" 
@@ -50,6 +44,12 @@ export default async function Header() {
                 className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
               >
                 Liquidity
+              </Link>
+              <Link 
+                href="/membership" 
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+              >
+                Membership
               </Link>
             </>
           ) : (
