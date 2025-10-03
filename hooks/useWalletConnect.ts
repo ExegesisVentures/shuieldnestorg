@@ -90,6 +90,66 @@ export function useWalletConnect() {
       // AUTHENTICATED USER MODE: Full signature verification flow
       console.log("Authenticated mode: verifying wallet signature");
       
+      // Get user's public_user_id first to check for duplicates in database
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("public_user_id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      if (!profile?.public_user_id) {
+        // Create profile if it doesn't exist
+        console.log("No user profile found, creating one...");
+        try {
+          const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
+          await ensurePublicUserProfile(supabase);
+          
+          // Re-fetch profile
+          const result = await supabase
+            .from("user_profiles")
+            .select("public_user_id")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+          
+          if (!result.data?.public_user_id) {
+            return {
+              success: false,
+              error: {
+                code: "PROFILE_CREATE_FAILED",
+                message: "Could not create user profile. Please try signing out and back in.",
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to create user profile:", error);
+          return {
+            success: false,
+            error: {
+              code: "PROFILE_ERROR",
+              message: "Error creating user profile. Please try again.",
+            },
+          };
+        }
+      }
+
+      // Check if wallet already exists in DATABASE (not localStorage)
+      const { data: existingWallet } = await supabase
+        .from("wallets")
+        .select("id")
+        .eq("address", address)
+        .eq("user_scope", "public")
+        .maybeSingle();
+
+      if (existingWallet) {
+        return {
+          success: false,
+          error: {
+            code: "WALLET_EXISTS",
+            message: "This wallet is already connected to your account",
+          },
+        };
+      }
+      
       let signFn: (address: string, message: string) => Promise<any>;
       
       switch (walletProvider) {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import SmartUpgradePrompt from "@/components/nudges/SmartUpgradePrompt";
+import VisitorWalletMigrationPrompt from "@/components/nudges/VisitorWalletMigrationPrompt";
 import WalletConnectModal from "@/components/wallet/WalletConnectModal";
 import ConnectedWallets from "@/components/wallet/ConnectedWallets";
 import PortfolioTotals from "@/components/portfolio/PortfolioTotals";
@@ -12,11 +13,14 @@ import { createSupabaseClient } from "@/utils/supabase/client";
 import { fetchUserWallets } from "@/utils/wallet/operations";
 import { getMultiAddressBalances, EnrichedBalance } from "@/utils/coreum/rpc";
 import { updatePortfolioValue } from "@/utils/visitor-upgrade-rules";
+import { hasVisitorWallets, isMigrationCompleted } from "@/utils/visitor-wallet-migration";
 
 export default function Dashboard() {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [publicUserId, setPublicUserId] = useState<string | null>(null);
+  const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
   const [walletCount, setWalletCount] = useState(0);
   const [totalValue, setTotalValue] = useState(0);
   const [change24h, setChange24h] = useState(0);
@@ -75,6 +79,13 @@ export default function Dashboard() {
         }
 
         if (profile?.public_user_id) {
+          setPublicUserId(profile.public_user_id);
+          
+          // Check if we should show migration prompt
+          if (hasVisitorWallets() && !isMigrationCompleted()) {
+            setShowMigrationPrompt(true);
+          }
+          
           // Fetch wallets
           const wallets = await fetchUserWallets(supabase, profile.public_user_id, "public");
           setWalletCount(wallets.length);
@@ -144,6 +155,15 @@ export default function Dashboard() {
 
   const handleConnectionSuccess = () => {
     setRefreshCounter((prev) => prev + 1);
+  };
+
+  const handleMigrationComplete = () => {
+    setShowMigrationPrompt(false);
+    setRefreshCounter((prev) => prev + 1);
+  };
+
+  const handleMigrationDismiss = () => {
+    setShowMigrationPrompt(false);
   };
 
   return (
@@ -230,6 +250,15 @@ export default function Dashboard() {
 
       {/* Smart Upgrade Prompt for Visitors */}
       {!isAuthenticated && <SmartUpgradePrompt />}
+
+      {/* Visitor Wallet Migration Prompt for Authenticated Users */}
+      {isAuthenticated && showMigrationPrompt && publicUserId && (
+        <VisitorWalletMigrationPrompt
+          publicUserId={publicUserId}
+          onComplete={handleMigrationComplete}
+          onDismiss={handleMigrationDismiss}
+        />
+      )}
     </main>
   );
 }
