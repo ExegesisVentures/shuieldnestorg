@@ -50,7 +50,7 @@ export default function WalletConnectModal({
 
     if (result.success) {
       onSuccess?.();
-      setShowManual(false);
+      onClose(); // Close the modal on success
     } else if (result.error) {
       setError(result.error.hint || result.error.message);
     }
