@@ -23,6 +23,8 @@ export default function WalletConnectModal({
 
   if (!isOpen) return null;
 
+  console.log("WalletConnectModal rendered, showManual:", showManual);
+
   const handleConnect = async (walletProvider: "keplr" | "leap" | "cosmostation") => {
     setError(null);
     const result = await connectWallet(walletProvider);
