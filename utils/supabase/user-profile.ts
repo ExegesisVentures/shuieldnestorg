@@ -28,12 +28,12 @@ export async function ensurePublicUserProfile(supabase: SupabaseClient) {
   }
 
   // Create public_users record
+  // Note: Don't include updated_at - it's auto-managed by trigger
   const { data: publicUser, error: createError } = await supabase
     .from("public_users")
     .insert({
       email: authUser.email,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .select("id")
     .single();
