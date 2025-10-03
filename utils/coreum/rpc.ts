@@ -50,7 +50,16 @@ export async function fetchBalances(address: string): Promise<TokenBalance[]> {
     }
     
     const data = await response.json();
-    return data.balances || [];
+    const balances = data.balances || [];
+    
+    // DEBUG: Log actual denoms from blockchain
+    console.log("=== ACTUAL DENOMS FROM BLOCKCHAIN ===");
+    balances.forEach((b: TokenBalance) => {
+      console.log(`Denom: ${b.denom}, Amount: ${b.amount}`);
+    });
+    console.log("====================================");
+    
+    return balances;
   } catch (error) {
     console.error("Error fetching balances:", error);
     return [];
@@ -108,7 +117,7 @@ export async function fetchRewards(address: string): Promise<string> {
 
 /**
  * Get token metadata (symbol, name, decimals)
- * Uses comprehensive token registry
+ * Uses comprehensive token registry with smart fallback
  */
 export function getTokenInfo(denom: string): TokenInfo {
   // Check token registry first
@@ -124,10 +133,33 @@ export function getTokenInfo(denom: string): TokenInfo {
     };
   }
 
-  // Fallback for unknown tokens
+  // Smart fallback for unknown tokens
+  let symbol = denom.toUpperCase();
+  let name = denom;
+  
+  // If denom starts with "u" (like ucore, udrop), strip it and use next 4 chars
+  if (denom.startsWith("u") && denom.length > 1) {
+    symbol = denom.substring(1, 5).toUpperCase(); // Take chars after 'u', max 4
+    name = symbol; // Use the symbol as name
+  }
+  // If denom has "-core1" pattern (factory tokens), extract prefix
+  else if (denom.includes("-core1")) {
+    const prefix = denom.split("-")[0];
+    symbol = prefix.substring(0, 4).toUpperCase();
+    name = `${symbol} Token`;
+  }
+  // IBC tokens
+  else if (denom.startsWith("ibc/")) {
+    const hash = denom.substring(4);
+    symbol = `IBC-${hash.substring(0, 4).toUpperCase()}`;
+    name = "IBC Token";
+  }
+  
+  console.log(`⚠️ Unknown token denom: ${denom} → Using fallback symbol: ${symbol}`);
+
   return {
-    symbol: denom.toUpperCase(),
-    name: denom,
+    symbol,
+    name,
     denom,
     decimals: 6, // default
   };
@@ -237,12 +269,15 @@ export async function getAddressBalances(address: string): Promise<EnrichedBalan
   // Add staking and rewards data for COREUM
   const coreBalance = enriched.find(b => b.denom === "ucore");
   if (coreBalance) {
+    console.log("✅ Found CORE balance, fetching staking data...");
     const staked = await fetchStakedBalance(address);
     const rewards = await fetchRewards(address);
     
     coreBalance.staked = formatTokenAmount(staked, 6);
     coreBalance.rewards = formatTokenAmount(rewards, 6);
     coreBalance.available = coreBalance.balanceFormatted;
+    
+    console.log(`💰 CORE Breakdown - Available: ${coreBalance.available}, Staked: ${coreBalance.staked}, Rewards: ${coreBalance.rewards}`);
     
     // Update total balance to include staked
     const totalBalance = BigInt(coreBalance.balance) + BigInt(staked) + BigInt(rewards);
@@ -252,6 +287,8 @@ export async function getAddressBalances(address: string): Promise<EnrichedBalan
     // Recalculate value with total
     const price = await getTokenPrice("CORE");
     coreBalance.valueUsd = parseFloat(coreBalance.balanceFormatted) * price;
+  } else {
+    console.log("❌ No CORE balance found in enriched balances");
   }
   
   return enriched;
