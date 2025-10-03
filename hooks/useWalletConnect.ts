@@ -224,20 +224,47 @@ export function useWalletConnect() {
 
       // For authenticated users, save to database
       // Get user's public_user_id
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from("user_profiles")
         .select("public_user_id")
         .eq("auth_user_id", user.id)
-        .single();
+        .maybeSingle();
 
+      // If no profile exists, create one
       if (!profile?.public_user_id) {
-        return {
-          success: false,
-          error: {
-            code: "PROFILE_NOT_FOUND",
-            message: "User profile not found",
-          },
-        };
+        console.log("No user profile found in addManualAddress, creating one...");
+        try {
+          const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
+          await ensurePublicUserProfile(supabase);
+          
+          // Re-fetch profile
+          const result = await supabase
+            .from("user_profiles")
+            .select("public_user_id")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
+          
+          profile = result.data;
+          
+          if (!profile?.public_user_id) {
+            return {
+              success: false,
+              error: {
+                code: "PROFILE_CREATE_FAILED",
+                message: "Could not create user profile. Please try signing out and back in.",
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to create user profile:", error);
+          return {
+            success: false,
+            error: {
+              code: "PROFILE_ERROR",
+              message: "Error creating user profile. Please try again.",
+            },
+          };
+        }
       }
 
       // Check if wallet already exists
