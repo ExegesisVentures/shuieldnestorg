@@ -56,11 +56,16 @@ export async function POST(req: Request) {
     // Check if user is authenticated using session client (has access to cookies)
     console.log("Checking user authentication...");
     
+    // Debug: Check cookies
+    const cookies = req.headers.get('cookie');
+    console.log("Request has cookies:", !!cookies);
+    
     // Try getting session first (more reliable for cookie-based auth)
     const { data: { session }, error: sessionError } = await sessionClient.auth.getSession();
     console.log("Session check:", {
       hasSession: !!session,
       sessionError: sessionError?.message,
+      userId: session?.user?.id,
     });
     
     const { data: { user: authUser }, error: authError } = await sessionClient.auth.getUser();
@@ -68,12 +73,22 @@ export async function POST(req: Request) {
       isAuthenticated: !!authUser, 
       userId: authUser?.id,
       userEmail: authUser?.email,
-      authError: authError?.message 
+      authError: authError?.message,
+      fromSession: session?.user?.id === authUser?.id
+    });
+    
+    // CRITICAL FIX: If getUser() fails but we have a session, use session user
+    const user = authUser || session?.user;
+    console.log("Final user determination:", {
+      hasUser: !!user,
+      userId: user?.id,
+      source: authUser ? 'getUser()' : (session?.user ? 'session' : 'none')
     });
 
-    if (!authUser) {
+    if (!user) {
       // Scenario 2: Wallet-bootstrap - create user account via anonymous auth
       console.log("No authenticated user - creating anonymous account...");
+      console.log("DEBUG: User not authenticated - this should not happen if you just signed in");
       
       const { data: signUpData, error: signUpError } = await serviceClient.auth.signInAnonymously({
         options: {
@@ -156,27 +171,39 @@ export async function POST(req: Request) {
 
     // Scenario 1: Authenticated user linking additional wallet
     console.log("Authenticated user - linking wallet to existing account...");
-    const publicUserId = await getPublicUserId(serviceClient);
+    console.log("User details:", {
+      id: user.id,
+      email: user.email
+    });
+    
+    // Get public user ID from the user_profiles table
+    // CRITICAL: Use sessionClient to ensure we're checking the authenticated user's profile
+    const publicUserId = await getPublicUserId(sessionClient);
     console.log("Existing public user ID:", publicUserId);
     
     if (!publicUserId) {
-      // Create public profile if it doesn't exist
-      console.log("No public profile found - creating one...");
+      // Profile doesn't exist - database trigger should have created it
+      // This is a fallback - create it now using service client
+      console.log("WARNING: No public profile found - database trigger may not have fired");
+      console.log("Creating profile as fallback...");
+      
       await ensurePublicUserProfile(serviceClient);
+      
+      // Re-check
       const newPublicUserId = await getPublicUserId(serviceClient);
-      console.log("New public user ID:", newPublicUserId);
+      console.log("Created public user ID:", newPublicUserId);
       
       if (!newPublicUserId) {
-        console.error("Failed to create or find public user profile");
+        console.error("CRITICAL: Failed to create user profile even with service client");
         return NextResponse.json(
-          uiError("PROFILE_ERROR", "Could not find or create user profile."),
+          uiError("PROFILE_ERROR", "Could not find or create user profile. Database trigger may not be configured."),
           { status: 500 }
         );
       }
     }
 
     const finalPublicUserId = publicUserId || await getPublicUserId(serviceClient);
-    console.log("Final public user ID:", finalPublicUserId);
+    console.log("Final public user ID for wallet linking:", finalPublicUserId);
 
     // Check if wallet already exists for this user
     const { data: existingWallet } = await serviceClient
