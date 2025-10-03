@@ -37,8 +37,12 @@ export async function POST(req: Request) {
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
     if (!authUser) {
-      // Scenario 2: Wallet-bootstrap - create anonymous user (no email required)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signInAnonymously({
+      // Scenario 2: Wallet-bootstrap - create user account
+      // Try anonymous auth first (requires it to be enabled in Supabase)
+      let signUpData;
+      let signUpError;
+      
+      const anonResult = await supabase.auth.signInAnonymously({
         options: {
           data: {
             wallet_bootstrap: true,
@@ -46,6 +50,34 @@ export async function POST(req: Request) {
           }
         }
       });
+
+      // If anonymous auth is disabled, fall back to email-based signup
+      if (anonResult.error?.message?.includes("Anonymous sign-ins are disabled")) {
+        console.log("Anonymous auth disabled, using email fallback");
+        
+        // Use a valid email format: wallet+{short_address}@shieldnest.app
+        const shortAddr = address.slice(0, 10).toLowerCase();
+        const walletEmail = `wallet+${shortAddr}@shieldnest.app`;
+        const randomPassword = crypto.randomUUID();
+
+        const emailResult = await supabase.auth.signUp({
+          email: walletEmail,
+          password: randomPassword,
+          options: {
+            data: {
+              wallet_bootstrap: true,
+              wallet_address: address,
+            },
+            emailRedirectTo: undefined, // Don't send confirmation email
+          }
+        });
+
+        signUpData = emailResult.data;
+        signUpError = emailResult.error;
+      } else {
+        signUpData = anonResult.data;
+        signUpError = anonResult.error;
+      }
 
       if (signUpError || !signUpData.user) {
         return NextResponse.json(
