@@ -63,4 +63,13 @@
 - Add debug hints in error responses (can strip in production)
 - Use clear markers like "=== STEP NAME ===" for easy log searching
 - This saves hours of debugging blind
+- **Example success**: Logging revealed "Missing Supabase environment variables" - found missing SUPABASE_SERVICE_ROLE_KEY in Vercel
+
+## 11. **Environment Variables in Deployment**
+- Local .env.local works ≠ Vercel has the same variables
+- ALWAYS check Vercel Dashboard → Settings → Environment Variables
+- Need to set for: Production, Preview, AND Development
+- After adding env vars, MUST redeploy (not automatic)
+- Server-side env vars (without NEXT_PUBLIC_) won't work if missing
+- Use `.env.example` file to document all required variables
 
