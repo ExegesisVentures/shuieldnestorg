@@ -51,34 +51,21 @@ export default function Dashboard() {
 
       if (user) {
         // AUTHENTICATED USER MODE
-        // Get user's public_user_id
-        let { data: profile } = await supabase
+        // Get user's public_user_id - should exist from database trigger
+        const { data: profile } = await supabase
           .from("user_profiles")
           .select("public_user_id")
           .eq("auth_user_id", user.id)
           .maybeSingle();
 
-        // If no profile exists, create one
         if (!profile?.public_user_id) {
-          console.log("No user profile found, creating one...");
-          try {
-            const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
-            await ensurePublicUserProfile(supabase);
-            
-            // Re-fetch profile
-            const result = await supabase
-              .from("user_profiles")
-              .select("public_user_id")
-              .eq("auth_user_id", user.id)
-              .maybeSingle();
-            
-            profile = result.data;
-          } catch (error) {
-            console.error("Failed to create user profile:", error);
-          }
+          // Profile should exist from database trigger
+          console.error("No user profile found - database trigger may not be set up");
+          setLoading(false);
+          return;
         }
 
-        if (profile?.public_user_id) {
+        if (profile.public_user_id) {
           setPublicUserId(profile.public_user_id);
           
           // Check if we should show migration prompt

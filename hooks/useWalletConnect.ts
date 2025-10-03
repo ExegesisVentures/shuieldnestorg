@@ -90,7 +90,7 @@ export function useWalletConnect() {
       // AUTHENTICATED USER MODE: Full signature verification flow
       console.log("Authenticated mode: verifying wallet signature");
       
-      // Get user's public_user_id first to check for duplicates in database
+      // Get user's public_user_id - should exist from database trigger
       const { data: profile } = await supabase
         .from("user_profiles")
         .select("public_user_id")
@@ -98,44 +98,16 @@ export function useWalletConnect() {
         .maybeSingle();
 
       if (!profile?.public_user_id) {
-        // Create profile if it doesn't exist using API route (bypasses RLS)
-        console.log("No user profile found, creating one...");
-        try {
-          const response = await fetch("/api/user/profile", {
-            method: "POST",
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.details || "Failed to create profile");
-          }
-          
-          // Re-fetch profile
-          const result = await supabase
-            .from("user_profiles")
-            .select("public_user_id")
-            .eq("auth_user_id", user.id)
-            .maybeSingle();
-          
-          if (!result.data?.public_user_id) {
-            return {
-              success: false,
-              error: {
-                code: "PROFILE_CREATE_FAILED",
-                message: "Could not create user profile. Please try signing out and back in.",
-              },
-            };
-          }
-        } catch (error) {
-          console.error("Failed to create user profile:", error);
-          return {
-            success: false,
-            error: {
-              code: "PROFILE_ERROR",
-              message: "Error creating user profile. Please try again.",
-            },
-          };
-        }
+        // This should never happen if database trigger is working
+        console.error("No user profile found - database trigger may not be set up");
+        return {
+          success: false,
+          error: {
+            code: "PROFILE_NOT_FOUND",
+            message: "User profile not found. Please contact support or try signing out and back in.",
+            hint: "Database trigger may not be configured. Check DATABASE-TRIGGER-SETUP.md",
+          },
+        };
       }
 
       // Check if wallet already exists in DATABASE (not localStorage)
@@ -289,54 +261,24 @@ export function useWalletConnect() {
       }
 
       // For authenticated users, save to database
-      // Get user's public_user_id
-      let { data: profile } = await supabase
+      // Get user's public_user_id - should exist from database trigger
+      const { data: profile } = await supabase
         .from("user_profiles")
         .select("public_user_id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      // If no profile exists, create one using API route (bypasses RLS)
       if (!profile?.public_user_id) {
-        console.log("No user profile found in addManualAddress, creating one...");
-        try {
-          const response = await fetch("/api/user/profile", {
-            method: "POST",
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.details || "Failed to create profile");
-          }
-          
-          // Re-fetch profile
-          const result = await supabase
-            .from("user_profiles")
-            .select("public_user_id")
-            .eq("auth_user_id", user.id)
-            .maybeSingle();
-          
-          profile = result.data;
-          
-          if (!profile?.public_user_id) {
-            return {
-              success: false,
-              error: {
-                code: "PROFILE_CREATE_FAILED",
-                message: "Could not create user profile. Please try signing out and back in.",
-              },
-            };
-          }
-        } catch (error) {
-          console.error("Failed to create user profile:", error);
-          return {
-            success: false,
-            error: {
-              code: "PROFILE_ERROR",
-              message: "Error creating user profile. Please try again.",
-            },
-          };
-        }
+        // This should never happen if database trigger is working
+        console.error("No user profile found - database trigger may not be set up");
+        return {
+          success: false,
+          error: {
+            code: "PROFILE_NOT_FOUND",
+            message: "User profile not found. Please contact support or try signing out and back in.",
+            hint: "Database trigger may not be configured. Check DATABASE-TRIGGER-SETUP.md",
+          },
+        };
       }
 
       // Check if wallet already exists

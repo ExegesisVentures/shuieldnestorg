@@ -62,52 +62,17 @@ export default function ConnectedWallets({ onRefresh }: ConnectedWalletsProps) {
 
       setIsVisitor(false);
 
-      // Get user's public_user_id
+      // Get user's public_user_id - should exist from database trigger
       const { data: profile } = await supabase
         .from("user_profiles")
         .select("public_user_id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      // If no profile exists, create one
       if (!profile?.public_user_id) {
-        console.log("No user profile found in ConnectedWallets, creating one...");
-        try {
-          const { ensurePublicUserProfile } = await import("@/utils/supabase/user-profile");
-          await ensurePublicUserProfile(supabase);
-          
-          // Re-fetch profile
-          const { data: newProfile } = await supabase
-            .from("user_profiles")
-            .select("public_user_id")
-            .eq("auth_user_id", user.id)
-            .maybeSingle();
-          
-          if (!newProfile?.public_user_id) {
-            setWallets([]);
-            setLoading(false);
-            return;
-          }
-          
-          // Use new profile
-          const { data, error } = await supabase
-            .from("wallets")
-            .select("*")
-            .eq("user_id", newProfile.public_user_id)
-            .eq("user_scope", "public")
-            .order("is_primary", { ascending: false })
-            .order("created_at", { ascending: false });
-
-          if (error) {
-            console.error("Failed to load wallets:", error);
-            setWallets([]);
-          } else {
-            setWallets(data || []);
-          }
-        } catch (error) {
-          console.error("Failed to create user profile:", error);
-          setWallets([]);
-        }
+        // Profile should exist from database trigger
+        console.error("No user profile found - database trigger may not be set up");
+        setWallets([]);
         setLoading(false);
         return;
       }
