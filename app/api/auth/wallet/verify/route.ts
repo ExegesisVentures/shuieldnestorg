@@ -37,14 +37,8 @@ export async function POST(req: Request) {
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
     if (!authUser) {
-      // Scenario 2: Wallet-bootstrap - create anonymous user
-      // Generate a unique email based on wallet address
-      const bootstrapEmail = email || `${address.toLowerCase()}@wallet.shieldnest.local`;
-      const randomPassword = crypto.randomUUID();
-
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: bootstrapEmail,
-        password: randomPassword,
+      // Scenario 2: Wallet-bootstrap - create anonymous user (no email required)
+      const { data: signUpData, error: signUpError } = await supabase.auth.signInAnonymously({
         options: {
           data: {
             wallet_bootstrap: true,
@@ -88,7 +82,7 @@ export async function POST(req: Request) {
         userId: publicUserId,
         verified: false,
         walletBootstrap: true,
-        message: "Wallet linked successfully. Please set an email to secure your account."
+        message: "Wallet connected successfully! You can optionally add an email in settings."
       });
     }
 

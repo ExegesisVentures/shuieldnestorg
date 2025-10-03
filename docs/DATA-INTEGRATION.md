@@ -117,8 +117,11 @@ interface Wallet {
 3. Create ADR-36 sign document
 4. Request signature from wallet extension
 5. Send signature to `/api/auth/wallet/verify`
-6. API verifies signature and adds wallet to database
-7. Hook returns success/error
+6. API verifies signature:
+   - If not authenticated: Creates anonymous Supabase user (no email required)
+   - If authenticated: Links wallet to existing user
+7. Wallet added to database
+8. Hook returns success/error
 
 **Manual Address Flow**:
 1. User enters Coreum address

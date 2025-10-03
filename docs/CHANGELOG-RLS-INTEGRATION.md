@@ -276,7 +276,7 @@ Both should be `SECURITY DEFINER` and granted to `authenticated`.
 - [ ] Request nonce
 - [ ] Sign message with wallet
 - [ ] POST to `/api/auth/wallet/verify` without auth
-- [ ] Verify auth.users created with `{address}@wallet.shieldnest.local`
+- [ ] Verify auth.users created as anonymous (no email required for wallet-only)
 - [ ] Check public_users + user_profiles created
 - [ ] Check wallets table has new wallet record
 - [ ] Check wallet has `is_primary: true`

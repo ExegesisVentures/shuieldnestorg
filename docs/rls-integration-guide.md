@@ -383,7 +383,7 @@ WITH CHECK (true);
 3. Frontend sends signature to `/api/auth/wallet/verify`
 4. Backend:
    - Verifies nonce
-   - Creates auth.users with email like `{address}@wallet.shieldnest.local`
+   - Creates anonymous auth.users (no email required)
    - Creates public_users + user_profiles mapping
    - Creates wallet record
 5. User prompted to set real email later
