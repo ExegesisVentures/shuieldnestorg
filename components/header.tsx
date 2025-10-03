@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Shield, Wallet } from "lucide-react";
+import { Shield } from "lucide-react";
 import { createSupabaseClient } from "@/utils/supabase/server";
 import HeaderUserMenu from "@/components/header-user-menu";
+import HeaderSignInButton from "@/components/header-sign-in-button";
 
 export default async function Header() {
   const client = await createSupabaseClient();
@@ -75,17 +75,7 @@ export default async function Header() {
           {user ? (
             <HeaderUserMenu user={user} />
           ) : (
-            <>
-              <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-                <Link href="/sign-in">Sign In</Link>
-              </Button>
-              <Button size="sm" asChild>
-                <Link href="/sign-up">
-                  <Wallet className="w-4 h-4 mr-2" />
-                  Get Started
-                </Link>
-              </Button>
-            </>
+            <HeaderSignInButton />
           )}
         </div>
       </div>
